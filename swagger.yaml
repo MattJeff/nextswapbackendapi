@@ -1,0 +1,266 @@
+openapi: 3.0.0
+info:
+  title: Video Matchmaking API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+paths:
+  /moderation/report:
+    post:
+      summary: Signaler un utilisateur (modération)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reporterId:
+                  type: string
+                reportedUserId:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '201':
+          description: Signalement enregistré
+        '400':
+          description: Paramètres manquants
+  /webhook/videosdk:
+    post:
+      summary: Webhook VideoSDK.live (fin d'appel, recording...)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook reçu et traité
+        '500':
+          description: Erreur serveur
+  /video/room:
+    post:
+      summary: Créer une room VideoSDK pour deux utilisateurs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userA:
+                  type: string
+                userB:
+                  type: string
+      responses:
+        '201':
+          description: Room créée et tokens retournés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roomId:
+                    type: string
+                  tokens:
+                    type: object
+                    additionalProperties:
+                      type: string
+        '400':
+          description: Paramètres manquants
+        '500':
+          description: Erreur serveur
+  /auth/login:
+    post:
+      summary: Connexion utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Token JWT retourné
+  /profiles:
+    get:
+      summary: Récupérer son profil
+      responses:
+        '200':
+          description: Profil retourné
+      security:
+        - bearerAuth: []
+    put:
+      summary: Mettre à jour son profil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profil mis à jour
+      security:
+        - bearerAuth: []
+  /profiles/{userId}:
+    get:
+      summary: Récupérer le profil public d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Profil public
+      security:
+        - bearerAuth: []
+  /profiles/photo:
+    post:
+      summary: Uploader une photo de profil
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Photo uploadée
+      security:
+        - bearerAuth: []
+  /friendships/request/{userId}:
+    post:
+      summary: Envoyer une demande d'ami
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        '201':
+          description: Demande envoyée
+        '409':
+          description: Déjà envoyé ou déjà amis
+        '400':
+          description: Mauvaise requête
+      security:
+        - bearerAuth: []
+  /friendships/accept/{userId}:
+    post:
+      summary: Accepter une demande d'ami
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Accepté
+        '404':
+          description: Demande non trouvée
+      security:
+        - bearerAuth: []
+  /friendships:
+    get:
+      summary: Lister ses amis
+      responses:
+        '200':
+          description: Liste d'amis
+      security:
+        - bearerAuth: []
+  /blocks/{userId}:
+    post:
+      summary: Bloquer un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        '201':
+          description: Utilisateur bloqué
+      security:
+        - bearerAuth: []
+    delete:
+      summary: Débloquer un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Utilisateur débloqué
+      security:
+        - bearerAuth: []
+  /blocks:
+    get:
+      summary: Lister les utilisateurs bloqués
+      responses:
+        '200':
+          description: Liste des utilisateurs bloqués
+      security:
+        - bearerAuth: []
+  /matchmaking:
+    post:
+      summary: Chercher un match compatible
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                language:
+                  type: string
+                nationality:
+                  type: string
+      responses:
+        '200':
+          description: Profil compatible trouvé
+        '404':
+          description: Aucun match trouvé
+      security:
+        - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ProfileUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+        birth_date:
+          type: string
+        language:
+          type: string
+        nationality:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        is_available_for_matchmaking:
+          type: boolean
