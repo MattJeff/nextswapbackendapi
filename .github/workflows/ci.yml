@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -8,21 +8,30 @@ on:
 
 jobs:
   build-and-test:
+    name: Build, Lint, Test, Audit, Docs
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 21.x]
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
       - name: Install dependencies
         run: npm ci
       - name: Lint
         run: npm run lint --if-present
+      - name: Format (Prettier)
+        run: npm run format:check || echo "No format script"
+        continue-on-error: true
+      - name: Audit dependencies
+        run: npm audit --audit-level=high || true
       - name: Build
         run: npm run build
       - name: Run tests
-        run: npm test
+        run: npm test -- --ci --reporters=jest-junit --reporters=default
       - name: Run coverage
         run: npm run test:coverage
       - name: Archive coverage report
@@ -30,3 +39,62 @@ jobs:
         with:
           name: jest-coverage-report
           path: coverage/
+      - name: Archive build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist/
+      - name: Publish coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: true
+      - name: Generate docs (TypeDoc)
+        run: npm run docs || echo "No docs script"
+        continue-on-error: true
+      - name: Archive docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/
+      - name: Check for Dockerfile
+        id: dockerfile-check
+        run: |
+          if [ -f Dockerfile ]; then echo "exists=true" >> $GITHUB_OUTPUT; else echo "exists=false" >> $GITHUB_OUTPUT; fi
+      - name: Docker build
+        if: steps.dockerfile-check.outputs.exists == 'true'
+        run: docker build -t my-app:ci .
+
+  deploy-pages:
+    if: github.ref == 'refs/heads/main' && success()
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+        continue-on-error: true
+
+  dockerhub:
+    if: github.ref == 'refs/heads/main' && success()
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Check for Dockerfile
+        id: dockerfile-check
+        run: |
+          if [ -f Dockerfile ]; then echo "exists=true" >> $GITHUB_OUTPUT; else echo "exists=false" >> $GITHUB_OUTPUT; fi
+      - name: Build and push Docker image
+        if: steps.dockerfile-check.outputs.exists == 'true'
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/nextswapbackendapi:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nextswapbackendapi:latest

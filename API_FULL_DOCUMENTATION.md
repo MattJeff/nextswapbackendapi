@@ -335,6 +335,189 @@
 
 ---
 
+## Endpoints additionnels
+
+### Santé
+
+#### GET `/health`
+- **Description** : Vérifier que l'API est en ligne
+- **Réponse** :
+```json
+{
+  "status": "ok",
+  "timestamp": 1713580000000
+}
+```
+
+---
+
+### Modération
+
+#### POST `/api/moderation/report`
+- **Description** : Signaler un utilisateur
+- **Headers** : `Authorization: Bearer <JWT>`
+- **Body** :
+```json
+{
+  "reported_id": "uuid",
+  "reason": "spam"
+}
+```
+
+---
+
+### Webhook
+
+#### POST `/api/webhook/videosdk`
+- **Description** : Webhook pour événements VideoSDK (usage interne)
+- **Body** : selon la doc VideoSDK
+
+---
+
+### Vidéo classique (création de room)
+
+#### POST `/api/video/room`
+- **Description** : Créer un room vidéo pour une session
+- **Headers** : `Authorization: Bearer <JWT>`
+- **Body** :
+```json
+{
+  "match_id": "uuid"
+}
+```
+- **Réponse** :
+```json
+{
+  "room_url": "https://..."
+}
+```
+
+---
+
+### Matchmaking (classique)
+
+#### POST `/api/v1/matchmaking/`
+- **Description** : Demander une mise en relation
+- **Headers** : `Authorization: Bearer <JWT>`
+
+---
+
+### Vidéo matchmaking (swipe)
+
+#### GET `/api/v1/video-matchmaking/next`
+- **Description** : Récupérer le prochain profil vidéo à matcher
+- **Headers** : `Authorization: Bearer <JWT>`
+
+---
+
+### Upload de fichiers pour messages
+
+#### POST `/api/v1/upload/message-media`
+- **Description** : Uploader une image ou vidéo pour un message
+- **Headers** : `Authorization: Bearer <JWT>`
+- **Body** : `multipart/form-data` (champ `file`)
+- **Réponse** :
+```json
+{
+  "url": "https://..."
+}
+```
+
+---
+
+### Gestion de profil avancée
+
+#### POST `/api/v1/profiles/me/photo`
+- **Description** : Uploader une photo de profil
+- **Headers** : `Authorization: Bearer <JWT>`
+- **Body** : `multipart/form-data` (champ `photo`)
+
+#### GET `/api/v1/profiles/me`
+- **Description** : Récupérer son profil (alternative à `/users/me`)
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### PATCH `/api/v1/profiles/me`
+- **Description** : Modifier son profil
+- **Headers** : `Authorization: Bearer <JWT>`
+- **Body** :
+```json
+{
+  "bio": "...",
+  "language": ["fr"],
+  ...
+}
+```
+
+#### GET `/api/v1/profiles/:userId`
+- **Description** : Récupérer le profil public d’un utilisateur
+- **Headers** : `Authorization: Bearer <JWT>`
+
+---
+
+### Gestion des blocks
+
+#### POST `/api/v1/blocks/:userId`
+- **Description** : Bloquer un utilisateur
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### DELETE `/api/v1/blocks/:userId`
+- **Description** : Débloquer un utilisateur
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### GET `/api/v1/blocks/`
+- **Description** : Liste des utilisateurs bloqués
+- **Headers** : `Authorization: Bearer <JWT>`
+
+---
+
+### Gestion des amis (routes REST)
+
+#### POST `/api/v1/friendships/request/:userId`
+- **Description** : Envoyer une demande d'ami
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### POST `/api/v1/friendships/accept/:userId`
+- **Description** : Accepter une demande d'ami
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### DELETE `/api/v1/friendships/:userId`
+- **Description** : Supprimer un ami
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### GET `/api/v1/friendships/`
+- **Description** : Liste des amis
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### GET `/api/v1/friendships/pending`
+- **Description** : Liste des demandes d’amis en attente
+- **Headers** : `Authorization: Bearer <JWT>`
+
+---
+
+### Recherche utilisateur CRUD
+
+#### GET `/api/v1/users/search`
+- **Description** : Rechercher des utilisateurs (avec filtres)
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### GET `/api/v1/users/:id`
+- **Description** : Récupérer un utilisateur par ID
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### POST `/api/v1/users/`
+- **Description** : Créer un utilisateur (usage interne/admin)
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### PUT `/api/v1/users/:id`
+- **Description** : Modifier un utilisateur
+- **Headers** : `Authorization: Bearer <JWT>`
+
+#### DELETE `/api/v1/users/:id`
+- **Description** : Supprimer un utilisateur
+- **Headers** : `Authorization: Bearer <JWT>`
+
+---
+
 ## Notes
 - Tous les endpoints nécessitent le header `Authorization: Bearer <JWT>` sauf inscription/login.
 - Les réponses d'erreur sont au format `{ "error": "message" }`.
