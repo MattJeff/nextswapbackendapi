@@ -5,11 +5,7 @@ import { z } from 'zod';
 
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
-  username: z.string().min(3).max(20),
-  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  language: z.string().min(2),
-  nationality: z.string().min(2)
+  password: z.string().min(6)
 });
 
 export const signup = async (req: Request, res: Response, next: NextFunction) => {
@@ -17,27 +13,29 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
   if (!parse.success) {
     return next(new ApiError(400, 'Invalid signup data'));
   }
-  const { email, password, username, birth_date, language, nationality } = parse.data;
+  const { email, password } = parse.data;
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
-      password,
-      options: {
-        data: { username, birth_date, language, nationality }
-      }
+      password
     });
     if (error) {
-      return next(new ApiError(409, error.message || 'Erreur lors de l\'inscription'));
+      return next(new ApiError(409, error.message || "Erreur lors de l'inscription"));
     }
     if (data.user && !data.session) {
       res.status(201).json({ message: 'Inscription réussie. Veuillez vérifier votre email pour confirmer votre compte.' });
     } else if (data.session) {
-      res.status(201).json({ message: 'Inscription et connexion réussies.', userId: data.user?.id });
+      res.status(201).json({
+        message: 'Inscription et connexion réussies.',
+        userId: data.user?.id,
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token
+      });
     } else {
       next(new ApiError(500, 'Réponse inattendue de Supabase après inscription'));
     }
   } catch (err: any) {
-    next(new ApiError(500, err.message || 'Erreur serveur lors de l\'inscription'));
+    next(new ApiError(500, err.message || "Erreur serveur lors de l'inscription"));
   }
 };
 

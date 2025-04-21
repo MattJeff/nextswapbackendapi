@@ -15,6 +15,7 @@ router.get('/search', validateUserSearch, searchUsers);
 router.get('/:id', authenticate, getUserById);
 router.post('/', authenticate, createUser);
 router.put('/:id', authenticate, updateUser);
+router.patch('/:id', authenticate, updateUser);
 router.delete('/:id', authenticate, deleteUser);
 
 export default router;
